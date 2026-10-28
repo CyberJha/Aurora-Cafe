@@ -6,9 +6,9 @@
 
 const express = require('express');
 const cors    = require('cors');
-require('dotenv').config(); // Load .env variables FIRST, before anything else
+require('dotenv').config();
 
-// db.js is imported early to validate DB connectivity at startup.
+// db.js connectivity initialization
 require('./db');
 
 const orderRoutes = require('./routes/orders');
@@ -17,36 +17,54 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-
-// CORS: Allow requests from the React Vite dev server (port 5173).
-// In production, replace the origin with your actual deployed frontend URL.
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type']
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Parse incoming JSON request bodies.
 app.use(express.json());
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-
-// All order-related routes are prefixed with /api/orders
 app.use('/api/orders', orderRoutes);
 
-// Health check endpoint — useful for deployment & uptime monitoring.
+// AI Chatbot endpoint for local development
+app.post('/api/chat', (req, res) => {
+    const { message } = req.body || {};
+    const text = (message || '').toLowerCase();
+    
+    let reply = "Welcome to Aurora Café! I'm Aura, your resident barista and literary guide. May I recommend a Velvet Cappuccino paired with a novel from our fiction shelf?";
+    let suggestions = ['Recommend a coffee', 'Book & brew pairing', 'See the menu', 'Skip the line order'];
+    let action = null;
+
+    if (/coffee|drink|recommend|cold brew|latte|espresso/i.test(text)) {
+        reply = "Our top house recommendation is the **Velvet Cappuccino (₹250)** with silky micro-foam, or our 24-hr steeped **Signature Cold Brew (₹350)** with rich chocolate notes!";
+        suggestions = ['Order Velvet Cappuccino', 'Order Cold Brew', 'View Menu'];
+        action = { type: 'select_drink', drinkName: 'Velvet Cappuccino' };
+    } else if (/book|library|read|shelf/i.test(text)) {
+        reply = "Our **Aurora Literary Lounge** features 70+ curated books across 7 distinct categories. You can borrow any title to read at your table!";
+        suggestions = ['Explore All Books', 'Book & Brew Pairing', 'Borrow a Book'];
+        action = { type: 'scroll_section', sectionId: 'library' };
+    }
+
+    res.json({ success: true, reply, suggestions, action });
+});
+
+// Health check endpoint
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'Aurora Cafe API is running' });
+    res.status(200).json({ status: 'ok', message: 'Aurora Cafe API is running', version: '2.0.0' });
+});
+
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Aurora Cafe API is running', version: '2.0.0' });
 });
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
-// Catches any request to a route that doesn't exist.
 app.use((req, res) => {
     res.status(404).json({ success: false, message: 'Route not found' });
 });
 
 // ── Global Error Handler ──────────────────────────────────────────────────────
-// Catches any unhandled errors thrown in route/controller code.
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err.stack);
     res.status(500).json({ success: false, message: 'Something went wrong' });

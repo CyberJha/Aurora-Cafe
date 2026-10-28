@@ -61,6 +61,9 @@ const Navbar = () => {
                         <a href="#menu" className={`nav-link ${activeSection === 'menu' ? 'active' : ''}`} onClick={closeMenu}>Menu</a>
                     </li>
                     <li className="nav-item">
+                        <a href="#library" className={`nav-link ${activeSection === 'library' ? 'active' : ''}`} onClick={closeMenu}>Library</a>
+                    </li>
+                    <li className="nav-item">
                         <a href="#order" className={`nav-link ${activeSection === 'order' ? 'active' : ''}`} onClick={closeMenu}>Order</a>
                     </li>
                     <li className="nav-item">

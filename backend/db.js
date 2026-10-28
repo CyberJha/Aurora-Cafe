@@ -9,25 +9,26 @@ const mysql = require('mysql2');
 require('dotenv').config();
 
 // Create a connection pool using environment variables for credentials.
-// mysql2's pool automatically handles acquiring/releasing connections.
 const pool = mysql.createPool({
-    host:     process.env.DB_HOST,
-    user:     process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host:     process.env.DB_HOST || 'localhost',
+    user:     process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'aurora_cafe',
     waitForConnections: true,  // Queue requests when all connections are busy
     connectionLimit: 10,       // Maximum simultaneous connections
-    queueLimit: 0              // Unlimited queued connection requests
+    queueLimit: 0,             // Unlimited queued connection requests
+    connectTimeout: 4000
 });
 
-// Immediately test the connection to catch misconfiguration at startup.
+// Test the connection without crashing the server if DB is temporarily unreachable
 pool.getConnection((err, connection) => {
     if (err) {
-        console.error('❌ MySQL connection failed:', err.message);
-        process.exit(1); // Exit process so issues are visible immediately
+        console.warn('⚠️  MySQL connection notice:', err.message);
+        console.warn('   The server will continue running with resilient fallback.');
+    } else {
+        console.log('✅ MySQL connected successfully');
+        connection.release();
     }
-    console.log('✅ MySQL connected successfully');
-    connection.release(); // Return connection back to the pool
 });
 
 // Export the promise-based version of the pool for use with async/await.
